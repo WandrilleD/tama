@@ -3,11 +3,41 @@
 import re
 import sys
 import time
-from Bio import SeqIO
+#from Bio import SeqIO
 from StringIO import StringIO
-from Bio import AlignIO
+#from Bio import AlignIO
 import os
 import argparse
+
+
+
+def parseFasta( fileName ):
+
+    seqID = None
+    seqDesc = None
+    seq = None
+
+
+    with open(fileName) as IN:
+        for l in IN:
+            if l.startswith('>'):
+                if not seqID is None:
+                    yield seqID,seqDesc,seq
+                seqDesc = l[1:].strip()
+                try:
+                    seqID= seqDesc.split(None, 1)[0]
+                except IndexError:
+                    assert not seqDesc, repr(seqDesc)
+                    # Should we use SeqRecord default for no ID?
+                    seqID = ""
+                seq = ''
+            else:
+                seq += l.strip()
+        if not seqID is None:
+            yield seqID,seqDesc,seq
+
+
+
 
 from __init__ import __version__
 
@@ -5024,11 +5054,11 @@ fasta_scaffold_list = [] # list of fatsa seq names to be compared to SAM file he
 prev_time = track_time(start_time,prev_time)
 #Create fasta lookup dict
 print("going through fasta")
-for seq_record in SeqIO.parse(fasta_file_name, "fasta"):
-    seq_name = str(seq_record.id)
-    seq_desc = str(seq_record.description)
+for seqID, seqDesc, seq in parseFasta( fasta_file_name ):
+    seq_name = seqID
+    seq_desc = seqDesc
     
-    seq_string = str(seq_record.seq)
+    seq_string = str(seq)
     seq_string = seq_string.upper()
     seq_length = len(seq_string)
     
@@ -5036,6 +5066,19 @@ for seq_record in SeqIO.parse(fasta_file_name, "fasta"):
     
     fasta_header_dict[seq_name] = seq_desc
     fasta_scaffold_list.append(seq_name)
+
+# for seq_record in SeqIO.parse(fasta_file_name, "fasta"):
+#     seq_name = str(seq_record.id)
+#     seq_desc = str(seq_record.description)
+    
+#     seq_string = str(seq_record.seq)
+#     seq_string = seq_string.upper()
+#     seq_length = len(seq_string)
+    
+#     fasta_dict[seq_name] = list(seq_string)
+    
+#     fasta_header_dict[seq_name] = seq_desc
+#     fasta_scaffold_list.append(seq_name)
 
 
 sam_flag_dict = {} #sam_flag_dict[flag number] = meaning
